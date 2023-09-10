@@ -1,6 +1,7 @@
 import os
 import uuid
 
+from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -46,7 +47,7 @@ def user_image_file_path(instance, filename: str):
     _, extension = os.path.splitext(filename)
     filename = f"{slugify(instance.username)}-{uuid.uuid4()}{extension}"
 
-    return os.path.join("uploads/users/", filename)
+    return os.path.join("uploads", "users", filename)
 
 
 class User(AbstractUser):
@@ -60,3 +61,43 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+
+
+class Hashtag(models.Model):
+    name = models.CharField(max_length=63)
+
+    def __str__(self):
+        return f"#{self.name}"
+
+
+def post_image_file_path(instance, filename: str):
+    _, extension = os.path.splitext(filename)
+    filename = f"{slugify(instance.title)}-{uuid.uuid4()}{extension}"
+
+    return os.path.join("uploads", "posts", filename)
+
+
+class Post(models.Model):
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="posts", on_delete=models.CASCADE
+    )
+    hashtags = models.ManyToManyField(Hashtag, related_name="posts", blank=True)
+    image = models.ImageField(null=True, upload_to=post_image_file_path)
+    created_at = models.DateTimeField(blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.title} (author: {self.author.username})"
+
+
+class Like(models.Model):
+    liker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, related_name="likes", on_delete=models.CASCADE)
+
+
+class Comment(models.Model):
+    post = models.ForeignKey(Post, related_name="comments", on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
