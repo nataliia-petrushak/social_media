@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
+from .models import Post, Hashtag, Comment, Like
+
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -50,4 +52,52 @@ class UserListSerializer(UserSerializer):
             "posts",
             "followers",
             "followings",
+        )
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(slug_field="username", read_only=True)
+
+    class Meta:
+        model = Comment
+        fields = ("id", "author", "content", "created_at")
+
+
+class PostSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+
+    class Meta:
+        model = Post
+        fields = (
+            "id",
+            "title",
+            "author",
+            "content",
+            "created_at",
+            "image",
+            "hashtags",
+        )
+        read_only_fields = ("id", "author")
+
+
+class PostListSerializer(PostSerializer):
+    author = serializers.SlugRelatedField(slug_field="username", read_only=True)
+    hashtags = serializers.SlugRelatedField(
+        many=True, slug_field="name", read_only=True
+    )
+    likes = serializers.IntegerField(source="likes.count", read_only=True)
+    is_liked = serializers.BooleanField(read_only=True)
+    comments = serializers.IntegerField(source="comments.count", read_only=True)
+
+    class Meta:
+        model = Post
+        fields = (
+            "id",
+            "title",
+            "author",
+            "image",
+            "hashtags",
+            "likes",
+            "comments",
+            "is_liked",
         )
