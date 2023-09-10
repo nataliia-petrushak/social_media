@@ -101,3 +101,71 @@ class PostListSerializer(PostSerializer):
             "comments",
             "is_liked",
         )
+
+
+class UserDetailSerializer(UserSerializer):
+    followers = UserListSerializer(many=True, read_only=True)
+    followings = UserListSerializer(many=True, read_only=True)
+    posts = PostListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "is_staff",
+            "bio",
+            "image",
+            "posts",
+            "followers",
+            "followings",
+        )
+        read_only_fields = ("is_staff",)
+
+
+class PostDetailSerializer(PostSerializer):
+    author = UserListSerializer(many=False, read_only=True)
+    hashtags = serializers.SlugRelatedField(
+        slug_field="name", many=True, read_only=True
+    )
+    comments = CommentSerializer(many=True, read_only=True)
+    likes = serializers.IntegerField(source="likes.count", read_only=True)
+
+    class Meta:
+        model = Post
+        fields = (
+            "id",
+            "title",
+            "content",
+            "author",
+            "image",
+            "hashtags",
+            "created_at",
+            "likes",
+            "comments",
+        )
+
+
+class HashtagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hashtag
+        fields = ("id", "name")
+
+
+class HashtagListSerializer(HashtagSerializer):
+    posts = serializers.IntegerField(source="posts.count", read_only=True)
+
+    class Meta:
+        model = Hashtag
+        fields = ("id", "name", "posts")
+
+
+class HashtagDetailSerializer(HashtagSerializer):
+    posts = PostListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Hashtag
+        fields = ("id", "name", "posts")
