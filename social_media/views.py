@@ -36,6 +36,7 @@ class UserViewSet(
 ):
     queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         """Retrieve users with filters"""
@@ -82,6 +83,7 @@ class APILogoutView(APIView):
 class HashtagViewSet(viewsets.ModelViewSet):
     queryset = Hashtag.objects.all()
     serializer_class = HashtagSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -94,6 +96,7 @@ class HashtagViewSet(viewsets.ModelViewSet):
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.select_related("author").prefetch_related("hashtags")
     serializer_class = PostSerializer
+    permission_classes = (IsAuthenticated,)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -171,3 +174,17 @@ def like_unlike(request, pk):
     Like.objects.create(liker=user, post=post)
     return Response({"message": "You liked this post"}, status=status.HTTP_201_CREATED)
 
+
+class CommentViewSet(viewsets.ModelViewSet):
+    queryset = Comment.objects.select_related("author", "post")
+    serializer_class = CommentSerializer
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        post = get_object_or_404(Post, pk=self.kwargs["pk"])
+        return Comment.objects.filter(post=post)
+
+    def perform_create(self, serializer):
+        post = get_object_or_404(Post, pk=self.kwargs["pk"])
+        serializer.is_valid(raise_exception=True)
+        serializer.save(author=self.request.user, post=post)
