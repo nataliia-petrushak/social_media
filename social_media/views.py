@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Exists, OuterRef
 from rest_framework import generics, mixins, viewsets
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -133,3 +134,21 @@ class PostViewSet(viewsets.ModelViewSet):
         if self.action == "retrieve":
             return PostDetailSerializer
         return self.serializer_class
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def follow_unfollow(request, pk):
+    user_to_follow = get_user_model().objects.get(pk=pk)
+    current_user = request.user
+    following = user_to_follow.followings.all()
+
+    if current_user in following:
+        user_to_follow.followings.remove(current_user.id)
+        return Response(
+            {"message": f"You are not following {user_to_follow.username} anymore"}
+        )
+
+    user_to_follow.followings.add(current_user.id)
+    return Response(data={"message": f"You are following {user_to_follow.username}"})
+
