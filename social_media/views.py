@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Exists, OuterRef
-from rest_framework import generics, mixins, viewsets
+from rest_framework import generics, mixins, viewsets, status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -139,7 +140,7 @@ class PostViewSet(viewsets.ModelViewSet):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def follow_unfollow(request, pk):
-    user_to_follow = get_user_model().objects.get(pk=pk)
+    user_to_follow = get_object_or_404(get_user_model(), pk=pk)
     current_user = request.user
     following = user_to_follow.followings.all()
 
@@ -151,4 +152,22 @@ def follow_unfollow(request, pk):
 
     user_to_follow.followings.add(current_user.id)
     return Response(data={"message": f"You are following {user_to_follow.username}"})
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def like_unlike(request, pk):
+    user = request.user
+    post = get_object_or_404(Post, pk=pk)
+    like = Like.objects.filter(liker=user, post=post)
+
+    if like:
+        like.delete()
+        return Response(
+            {"message": "You remove like from this post"},
+            status=status.HTTP_204_NO_CONTENT,
+        )
+
+    Like.objects.create(liker=user, post=post)
+    return Response({"message": "You liked this post"}, status=status.HTTP_201_CREATED)
 
