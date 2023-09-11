@@ -4,12 +4,27 @@ from rest_framework import serializers
 from .models import Post, Hashtag, Comment, Like
 
 
-class UserSerializer(serializers.ModelSerializer):
+class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = (
             "email",
             "password",
+        )
+        extra_kwargs = {"password": {"write_only": True, "min_length": 5}}
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = (
+            "id",
+            "email",
+            "password",
+            "first_name",
+            "last_name",
+            "bio",
+            "image"
         )
         extra_kwargs = {"password": {"write_only": True, "min_length": 5}}
 
@@ -49,6 +64,7 @@ class UserListSerializer(UserSerializer):
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(slug_field="username", read_only=True)
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
 
     class Meta:
         model = Comment

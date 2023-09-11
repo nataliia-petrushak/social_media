@@ -13,6 +13,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from .permissions import IsAuthorOrReadOnly
 from .models import Post, Hashtag, Like, Comment
 from .serializers import (
+    CreateUserSerializer,
     UserSerializer,
     UserListSerializer,
     UserDetailSerializer,
@@ -27,7 +28,7 @@ from .serializers import (
 
 
 class CreateUserView(generics.CreateAPIView):
-    serializer_class = UserSerializer
+    serializer_class = CreateUserSerializer
 
 
 class UserViewSet(
@@ -66,19 +67,34 @@ class ManageUserView(generics.RetrieveUpdateDestroyAPIView):
         return self.request.user
 
 
+@api_view(["GET"])
+def get_followers(request):
+    user = request.user
+    followers = user.followers.all()
+    serializer = UserListSerializer(followers, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["GET"])
+def get_followings(request):
+    user = request.user
+    followings = user.followings.all()
+    serializer = UserListSerializer(followings, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
+
+
 class APILogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
-        if self.request.data.get('all'):
-            token: OutstandingToken
+        if self.request.data.get("all"):
             for token in OutstandingToken.objects.filter(user=request.user):
                 _, _ = BlacklistedToken.objects.get_or_create(token=token)
-            return Response({"status": "OK, goodbye, all refresh tokens blacklisted"})
+            return Response({"status": "All refresh tokens blacklisted. Logout successful"})
         refresh_token = self.request.data.get("refresh_token")
         token = RefreshToken(token=refresh_token)
         token.blacklist()
-        return Response({"status": "OK, goodbye"})
+        return Response({"status": "Logout successful"})
 
 
 class HashtagViewSet(generics.ListCreateAPIView, generics.RetrieveAPIView, viewsets.GenericViewSet):
@@ -189,5 +205,4 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         post = get_object_or_404(Post, pk=self.kwargs["pk"])
-        serializer.is_valid(raise_exception=True)
         serializer.save(author=self.request.user, post=post)
