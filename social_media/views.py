@@ -22,6 +22,7 @@ from .serializers import (
     CommentSerializer,
     HashtagSerializer,
     HashtagListSerializer,
+    HashtagDetailSerializer
 )
 
 
@@ -80,7 +81,7 @@ class APILogoutView(APIView):
         return Response({"status": "OK, goodbye"})
 
 
-class HashtagViewSet(generics.ListCreateAPIView, viewsets.GenericViewSet):
+class HashtagViewSet(generics.ListCreateAPIView, generics.RetrieveAPIView, viewsets.GenericViewSet):
     queryset = Hashtag.objects.all()
     serializer_class = HashtagSerializer
     permission_classes = (IsAuthenticated,)
@@ -88,6 +89,8 @@ class HashtagViewSet(generics.ListCreateAPIView, viewsets.GenericViewSet):
     def get_serializer_class(self):
         if self.action == "list":
             return HashtagListSerializer
+        if self.action == "retrieve":
+            return HashtagDetailSerializer
         return self.serializer_class
 
 
@@ -121,7 +124,7 @@ class PostViewSet(viewsets.ModelViewSet):
         if title:
             queryset = queryset.filter(title__icontains=title)
 
-        if liked_posts:
+        if liked_posts == "True":
             queryset = queryset.filter(likes__liker=user)
 
         return queryset.annotate(
