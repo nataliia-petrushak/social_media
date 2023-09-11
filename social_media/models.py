@@ -54,8 +54,8 @@ class User(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
     bio = models.TextField(blank=True)
     image = models.ImageField(null=True, upload_to=user_image_file_path)
-    followers = models.ManyToManyField("self", blank=True)
-    followings = models.ManyToManyField("self", blank=True)
+    followers = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="follow_users", blank=True)
+    followings = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="following_users", blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []

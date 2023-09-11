@@ -10,7 +10,7 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, Bl
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from models import Post, Hashtag, Like, Comment
+from .models import Post, Hashtag, Like, Comment
 from .serializers import (
     UserSerializer,
     UserListSerializer,
@@ -145,15 +145,17 @@ class PostViewSet(viewsets.ModelViewSet):
 def follow_unfollow(request, pk):
     user_to_follow = get_object_or_404(get_user_model(), pk=pk)
     current_user = request.user
-    following = user_to_follow.followings.all()
+    followers = user_to_follow.followers.all()
 
-    if current_user in following:
-        user_to_follow.followings.remove(current_user.id)
+    if current_user in followers:
+        user_to_follow.followers.remove(current_user.id)
+        current_user.followings.remove(user_to_follow)
         return Response(
             {"message": f"You are not following {user_to_follow.username} anymore"}
         )
 
-    user_to_follow.followings.add(current_user.id)
+    user_to_follow.followers.add(current_user.id)
+    current_user.followings.add(user_to_follow.id)
     return Response(data={"message": f"You are following {user_to_follow.username}"})
 
 
