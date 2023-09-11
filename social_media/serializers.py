@@ -63,8 +63,23 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ("id", "author", "content", "created_at")
 
 
+class HashtagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Hashtag
+        fields = ("id", "name")
+
+
+class HashtagListSerializer(HashtagSerializer):
+    posts = serializers.IntegerField(source="posts.count", read_only=True)
+
+    class Meta:
+        model = Hashtag
+        fields = ("id", "name", "posts")
+
+
 class PostSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    hashtags = HashtagSerializer(many=True, required=False)
 
     class Meta:
         model = Post
@@ -147,25 +162,3 @@ class PostDetailSerializer(PostSerializer):
             "likes",
             "comments",
         )
-
-
-class HashtagSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Hashtag
-        fields = ("id", "name")
-
-
-class HashtagListSerializer(HashtagSerializer):
-    posts = serializers.IntegerField(source="posts.count", read_only=True)
-
-    class Meta:
-        model = Hashtag
-        fields = ("id", "name", "posts")
-
-
-class HashtagDetailSerializer(HashtagSerializer):
-    posts = PostListSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Hashtag
-        fields = ("id", "name", "posts")

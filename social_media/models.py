@@ -66,8 +66,16 @@ class User(AbstractUser):
 class Hashtag(models.Model):
     name = models.CharField(max_length=63)
 
-    def __str__(self):
-        return f"#{self.name}"
+    def save(
+        self, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        if not self.name.startswith("#"):
+            self.name = f"#{self.name}"
+
+        super().save(force_insert=False, force_update=False, using=None, update_fields=None)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 def post_image_file_path(instance, filename: str):
