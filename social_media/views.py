@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
 from rest_framework import generics, mixins, viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
@@ -68,18 +68,18 @@ class ManageUserView(generics.RetrieveUpdateDestroyAPIView):
 
 
 @api_view(["GET"])
-def get_followers(request):
+def followers(request):
     user = request.user
-    followers = user.followers.all()
-    serializer = UserListSerializer(followers, many=True)
+    user_followers = user.followers.all()
+    serializer = UserListSerializer(user_followers, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["GET"])
-def get_followings(request):
+def followings(request):
     user = request.user
-    followings = user.followings.all()
-    serializer = UserListSerializer(followings, many=True)
+    user_followings = user.followings.all()
+    serializer = UserListSerializer(user_followings, many=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -119,12 +119,12 @@ class PostViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def get_queryset(self):
-        queryset = self.queryset
         user = self.request.user
+        user_followings = user.followings.all()
+        queryset = self.queryset.filter(Q(author=user) | Q(author__in=user_followings))
 
         hashtag = self.request.query_params.get("hashtag")
         title = self.request.query_params.get("title")
-        liked_posts = self.request.query_params.get("liked")
         authors = self.request.query_params.get("authors")
 
         if authors:
@@ -140,9 +140,6 @@ class PostViewSet(viewsets.ModelViewSet):
         if title:
             queryset = queryset.filter(title__icontains=title)
 
-        if liked_posts == "True":
-            queryset = queryset.filter(likes__liker=user)
-
         return queryset.annotate(
             is_liked=Exists(
                 Like.objects.filter(liker=self.request.user, post_id=OuterRef("pk"))
@@ -155,6 +152,14 @@ class PostViewSet(viewsets.ModelViewSet):
         if self.action == "retrieve":
             return PostDetailSerializer
         return self.serializer_class
+
+
+@api_view(["GET"])
+def liked_posts(request):
+    user = request.user
+    posts = Post.objects.filter(likes__liker=user)
+    serializer = PostListSerializer(posts, many=True)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(["POST"])

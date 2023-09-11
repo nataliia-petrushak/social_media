@@ -16,8 +16,9 @@ from .views import (
     HashtagViewSet,
     like_unlike,
     follow_unfollow,
-    get_followers,
-    get_followings
+    followers,
+    followings,
+    liked_posts
 )
 
 router = routers.DefaultRouter()
@@ -34,10 +35,11 @@ urlpatterns = [
     path('login/verify/', TokenVerifyView.as_view(), name='token-verify'),
     path("logout/", APILogoutView.as_view(), name="logout"),
     path("users/me/", ManageUserView.as_view(), name="me"),
-    path("users/me/followers/", get_followers, name="user-followers"),
-    path("users/me/followings/", get_followings, name="user-followings"),
+    path("users/me/followers/", followers, name="user-followers"),
+    path("users/me/followings/", followings, name="user-followings"),
     path("users/<int:pk>/follow/", follow_unfollow, name="follow-unfollow-user"),
     path("posts/<int:pk>/like/", like_unlike, name="like-unlike-post"),
+    path("posts/liked/", liked_posts, name="liked-posts"),
     path(
             "posts/<int:pk>/comments/",
             comment_list,
