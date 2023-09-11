@@ -10,6 +10,7 @@ from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, Bl
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
+from .permissions import IsAuthorOrReadOnly
 from .models import Post, Hashtag, Like, Comment
 from .serializers import (
     UserSerializer,
@@ -96,7 +97,7 @@ class HashtagViewSet(viewsets.ModelViewSet):
 class PostViewSet(viewsets.ModelViewSet):
     queryset = Post.objects.select_related("author").prefetch_related("hashtags")
     serializer_class = PostSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
@@ -159,7 +160,7 @@ def follow_unfollow(request, pk):
     return Response(data={"message": f"You are following {user_to_follow.username}"})
 
 
-@api_view(["GET"])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def like_unlike(request, pk):
     user = request.user
@@ -180,7 +181,7 @@ def like_unlike(request, pk):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.select_related("author", "post")
     serializer_class = CommentSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
 
     def get_queryset(self):
         post = get_object_or_404(Post, pk=self.kwargs["pk"])
