@@ -12,6 +12,7 @@ from .views import (
     CreateUserView,
     APILogoutView,
     PostViewSet,
+    ScheduledPostViewSet,
     CommentViewSet,
     HashtagViewSet,
     like_unlike,
@@ -25,15 +26,16 @@ router = routers.DefaultRouter()
 router.register("users", UserViewSet)
 router.register("posts", PostViewSet)
 router.register("hashtags", HashtagViewSet)
+router.register("scheduled_posts", ScheduledPostViewSet)
 
 comment_list = CommentViewSet.as_view(actions={"get": "list", "post": "create"})
 
 urlpatterns = [
-    path("register/", CreateUserView.as_view(), name="user-create"),
-    path("login/", TokenObtainPairView.as_view(), name='token-obtain-pair'),
-    path('login/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
-    path('login/verify/', TokenVerifyView.as_view(), name='token-verify'),
-    path("logout/", APILogoutView.as_view(), name="logout"),
+    path("users/register/", CreateUserView.as_view(), name="user-create"),
+    path("users/login/", TokenObtainPairView.as_view(), name='token-obtain-pair'),
+    path('users/login/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    path('users/login/verify/', TokenVerifyView.as_view(), name='token-verify'),
+    path("users/logout/", APILogoutView.as_view(), name="logout"),
     path("users/me/", ManageUserView.as_view(), name="me"),
     path("users/me/followers/", followers, name="user-followers"),
     path("users/me/followings/", followings, name="user-followings"),

@@ -11,12 +11,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .permissions import IsAuthorOrReadOnly
-from .models import Post, Hashtag, Like, Comment
+from .models import Post, Hashtag, Like, Comment, ScheduledPost
 from .serializers import (
     CreateUserSerializer,
     UserSerializer,
     UserListSerializer,
     UserDetailSerializer,
+    ScheduledPostSerializer,
+    ScheduledPostListSerializer,
+    ScheduledPostDetailSerializer,
     PostSerializer,
     PostListSerializer,
     PostDetailSerializer,
@@ -110,7 +113,13 @@ class HashtagViewSet(generics.ListCreateAPIView, generics.RetrieveAPIView, views
         return self.serializer_class
 
 
-class PostViewSet(viewsets.ModelViewSet):
+class PostViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
     queryset = Post.objects.select_related("author").prefetch_related("hashtags")
     serializer_class = PostSerializer
     permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
@@ -125,14 +134,6 @@ class PostViewSet(viewsets.ModelViewSet):
 
         hashtag = self.request.query_params.get("hashtag")
         title = self.request.query_params.get("title")
-        authors = self.request.query_params.get("authors")
-
-        if authors:
-            if authors == "me":
-                queryset = queryset.filter(author=self.request.user)
-            if authors == "followings":
-                following_users = self.request.user.followings.all()
-                queryset = queryset.filter(author__in=following_users)
 
         if hashtag:
             queryset = queryset.filter(hashtags__name__icontains=hashtag)
@@ -151,6 +152,27 @@ class PostViewSet(viewsets.ModelViewSet):
             return PostListSerializer
         if self.action == "retrieve":
             return PostDetailSerializer
+        return self.serializer_class
+
+
+class ScheduledPostViewSet(
+    viewsets.ModelViewSet
+):
+    queryset = ScheduledPost.objects.select_related("author").prefetch_related("hashtags")
+    serializer_class = ScheduledPostSerializer
+    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
+    def get_queryset(self):
+        return self.queryset.filter(author=self.request.user)
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ScheduledPostListSerializer
+        if self.action == "retrieve":
+            return ScheduledPostDetailSerializer
         return self.serializer_class
 
 
