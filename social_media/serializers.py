@@ -1,13 +1,14 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import Post, Hashtag, Comment, Like
+from .models import Post, Hashtag, Comment, ScheduledPost
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = (
+            "username",
             "email",
             "password",
         )
@@ -19,6 +20,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = (
             "id",
+            "username",
             "email",
             "password",
             "first_name",
@@ -53,6 +55,7 @@ class UserListSerializer(UserSerializer):
         fields = (
             "id",
             "username",
+            "email",
             "first_name",
             "last_name",
             "image",
@@ -83,6 +86,24 @@ class HashtagListSerializer(HashtagSerializer):
     class Meta:
         model = Hashtag
         fields = ("id", "name", "posts")
+
+
+class ScheduledPostSerializer(serializers.ModelSerializer):
+    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M")
+    hashtags = HashtagSerializer(many=True, required=False)
+
+    class Meta:
+        model = ScheduledPost
+        fields = (
+            "id",
+            "title",
+            "author",
+            "content",
+            "created_at",
+            "image",
+            "hashtags",
+        )
+        read_only_fields = ("id", "author")
 
 
 class PostSerializer(serializers.ModelSerializer):
@@ -123,6 +144,23 @@ class PostListSerializer(PostSerializer):
             "likes",
             "comments",
             "is_liked",
+        )
+
+
+class ScheduledPostListSerializer(ScheduledPostSerializer):
+    author = serializers.SlugRelatedField(slug_field="username", read_only=True)
+    hashtags = serializers.SlugRelatedField(
+        many=True, slug_field="name", read_only=True
+    )
+
+    class Meta:
+        model = ScheduledPost
+        fields = (
+            "id",
+            "title",
+            "author",
+            "image",
+            "hashtags",
         )
 
 
@@ -177,4 +215,23 @@ class PostDetailSerializer(PostSerializer):
             "created_at",
             "likes",
             "comments",
+        )
+
+
+class ScheduledPostDetailSerializer(ScheduledPostSerializer):
+    author = UserListSerializer(many=False, read_only=True)
+    hashtags = serializers.SlugRelatedField(
+        slug_field="name", many=True, read_only=True
+    )
+
+    class Meta:
+        model = Post
+        fields = (
+            "id",
+            "title",
+            "content",
+            "author",
+            "image",
+            "hashtags",
+            "created_at",
         )

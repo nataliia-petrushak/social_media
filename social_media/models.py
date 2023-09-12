@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
 
@@ -93,7 +94,21 @@ class Post(models.Model):
     )
     hashtags = models.ManyToManyField(Hashtag, related_name="posts", blank=True)
     image = models.ImageField(null=True, upload_to=post_image_file_path)
-    created_at = models.DateTimeField(blank=True)
+    created_at = models.DateTimeField(blank=True, default=timezone.now)
+
+    def __str__(self) -> str:
+        return f"{self.title} (author: {self.author.username})"
+
+
+class ScheduledPost(models.Model):
+    title = models.CharField(max_length=255)
+    content = models.TextField()
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, related_name="scheduled_posts", on_delete=models.CASCADE
+    )
+    hashtags = models.ManyToManyField(Hashtag, related_name="scheduled_posts", blank=True)
+    image = models.ImageField(null=True, upload_to=post_image_file_path)
+    created_at = models.DateTimeField(blank=True, default=timezone.now)
 
     def __str__(self) -> str:
         return f"{self.title} (author: {self.author.username})"

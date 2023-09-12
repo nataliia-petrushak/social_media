@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.translation import gettext as _
 
-from .models import User, Post, Hashtag, Comment, Like
+from .models import User, ScheduledPost, Post, Hashtag, Comment, Like
 
 
 @admin.register(User)
@@ -29,6 +29,13 @@ class UserAdmin(DjangoUserAdmin):
 
 
 @admin.register(Post)
+class PostAdmin(admin.ModelAdmin):
+    list_display = ("title", "author", "created_at")
+    search_fields = ("title",)
+    list_filter = ("author",)
+
+
+@admin.register(ScheduledPost)
 class PostAdmin(admin.ModelAdmin):
     list_display = ("title", "author", "created_at")
     search_fields = ("title",)
