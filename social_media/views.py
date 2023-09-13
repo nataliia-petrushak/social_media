@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Exists, OuterRef, Q
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, mixins, viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import get_object_or_404
@@ -31,6 +33,7 @@ from .serializers import (
 
 
 class CreateUserView(generics.CreateAPIView):
+    """Users can register their account"""
     serializer_class = CreateUserSerializer
 
 
@@ -44,15 +47,12 @@ class UserViewSet(
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
-        """Retrieve users with filters"""
         username = self.request.query_params.get("username")
 
-        queryset = self.queryset
-
         if username:
-            queryset = queryset.filter(username__icontains=username)
+            self.queryset = self.queryset.filter(username__icontains=username)
 
-        return queryset.distinct()
+        return self.queryset.distinct()
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -60,8 +60,25 @@ class UserViewSet(
         if self.action == "retrieve":
             return UserDetailSerializer
 
+    @extend_schema(
+        # extra parameters added to the schema
+        parameters=[
+            OpenApiParameter(
+                name="username",
+                type=OpenApiTypes.STR,
+                description="Filter users by username (ex. ?username=user1)"
+            )
+        ],
+        description="Users can retrieve information about other users,"
+                    " and see the whole list of users."
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
 
 class ManageUserView(generics.RetrieveUpdateDestroyAPIView):
+    """Users can manage their page and add bio, images, and details.
+    They can also delete their account"""
     serializer_class = UserSerializer
     authentication_classes = (JWTAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -71,7 +88,9 @@ class ManageUserView(generics.RetrieveUpdateDestroyAPIView):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def followers(request):
+    """The user can see all the users that follow him"""
     user = request.user
     user_followers = user.followers.all()
     serializer = UserListSerializer(user_followers, many=True)
@@ -79,7 +98,9 @@ def followers(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def followings(request):
+    """The user can see the list of people he is following"""
     user = request.user
     user_followings = user.followings.all()
     serializer = UserListSerializer(user_followings, many=True)
@@ -87,6 +108,7 @@ def followings(request):
 
 
 class APILogoutView(APIView):
+    """The user can log out from his account"""
     permission_classes = (IsAuthenticated,)
 
     def post(self, request, *args, **kwargs):
@@ -100,7 +122,13 @@ class APILogoutView(APIView):
         return Response({"status": "Logout successful"})
 
 
-class HashtagViewSet(generics.ListCreateAPIView, generics.RetrieveAPIView, viewsets.GenericViewSet):
+class HashtagViewSet(
+    generics.ListCreateAPIView,
+    generics.RetrieveAPIView,
+    viewsets.GenericViewSet
+):
+    """Users can create hashtags, see the list of hashtags,
+    and see how many posts with this hashtag"""
     queryset = Hashtag.objects.all()
     serializer_class = HashtagSerializer
     permission_classes = (IsAuthenticated,)
@@ -120,6 +148,9 @@ class PostViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
+    """Users can see all their posts and posts of the users they are following.
+    They can retrieve details about posts, including details about the author.
+    Users can also see if they liked the post, how many people liked it, and comments."""
     queryset = Post.objects.select_related("author").prefetch_related("hashtags")
     serializer_class = PostSerializer
     permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
@@ -154,11 +185,34 @@ class PostViewSet(
             return PostDetailSerializer
         return self.serializer_class
 
+    @extend_schema(
+        # extra parameters added to the schema
+        parameters=[
+            OpenApiParameter(
+                name="hashtag",
+                type=OpenApiTypes.STR,
+                description="Filter posts by hashtag (ex. ?hashtag=interesting)"
+            ),
+            OpenApiParameter(
+                name="title",
+                type=OpenApiTypes.STR,
+                description="Filter posts by title (ex. ?title=Improve your life)"
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
 
 class ScheduledPostViewSet(
     viewsets.ModelViewSet
 ):
-    queryset = ScheduledPost.objects.select_related("author").prefetch_related("hashtags")
+    """Users can choose the time to create a post.
+    They also can see the list of all their scheduled posts,
+    and details, make changes, and delete."""
+    queryset = ScheduledPost.objects.select_related(
+        "author"
+    ).prefetch_related("hashtags")
     serializer_class = ScheduledPostSerializer
     permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
 
@@ -177,7 +231,9 @@ class ScheduledPostViewSet(
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def liked_posts(request):
+    """Users can see the lists of posts they have liked"""
     user = request.user
     posts = Post.objects.filter(likes__liker=user)
     serializer = PostListSerializer(posts, many=True)
@@ -187,11 +243,12 @@ def liked_posts(request):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def follow_unfollow(request, pk):
+    """Users can follow & unfollow other users"""
     user_to_follow = get_object_or_404(get_user_model(), pk=pk)
     current_user = request.user
-    followers = user_to_follow.followers.all()
+    user_followers = user_to_follow.followers.all()
 
-    if current_user in followers:
+    if current_user in user_followers:
         user_to_follow.followers.remove(current_user.id)
         current_user.followings.remove(user_to_follow)
         return Response(
@@ -206,6 +263,7 @@ def follow_unfollow(request, pk):
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def like_unlike(request, pk):
+    """Users can like & unlike posts"""
     user = request.user
     post = get_object_or_404(Post, pk=pk)
     like = Like.objects.filter(liker=user, post=post)
@@ -222,6 +280,7 @@ def like_unlike(request, pk):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
+    """Users can create comments and see all other comments on the post"""
     queryset = Comment.objects.select_related("author", "post")
     serializer_class = CommentSerializer
     permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
