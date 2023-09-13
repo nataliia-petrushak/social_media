@@ -21,7 +21,7 @@ def save_posts():
             hashtags = Hashtag.objects.filter(scheduled_posts=post)
             new_post.hashtags.set(hashtags)
             logger.info(f"Post Created: {new_post.title}")
-            # Delete the scheduled post after creating the new post
+
             post.delete()
     else:
         logger.info("There is nothing to publish")
