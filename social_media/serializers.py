@@ -46,8 +46,12 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserListSerializer(UserSerializer):
-    followers = serializers.IntegerField(source="followers.count", read_only=True)
-    followings = serializers.IntegerField(source="followings.count", read_only=True)
+    followers = serializers.IntegerField(
+        source="followers.count", read_only=True
+    )
+    followings = serializers.IntegerField(
+        source="followings.count", read_only=True
+    )
     posts = serializers.IntegerField(source="posts.count", read_only=True)
 
     class Meta:
@@ -66,8 +70,12 @@ class UserListSerializer(UserSerializer):
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    author = serializers.SlugRelatedField(slug_field="username", read_only=True)
-    created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
+    author = serializers.SlugRelatedField(
+        slug_field="username", read_only=True
+    )
+    created_at = serializers.DateTimeField(
+        format="%Y-%m-%d %H:%M", read_only=True
+    )
 
     class Meta:
         model = Comment
@@ -125,13 +133,17 @@ class PostSerializer(serializers.ModelSerializer):
 
 
 class PostListSerializer(PostSerializer):
-    author = serializers.SlugRelatedField(slug_field="username", read_only=True)
+    author = serializers.SlugRelatedField(
+        slug_field="username", read_only=True
+    )
     hashtags = serializers.SlugRelatedField(
         many=True, slug_field="name", read_only=True
     )
     likes = serializers.IntegerField(source="likes.count", read_only=True)
     is_liked = serializers.BooleanField(read_only=True)
-    comments = serializers.IntegerField(source="comments.count", read_only=True)
+    comments = serializers.IntegerField(
+        source="comments.count", read_only=True
+    )
 
     class Meta:
         model = Post
@@ -148,7 +160,9 @@ class PostListSerializer(PostSerializer):
 
 
 class ScheduledPostListSerializer(ScheduledPostSerializer):
-    author = serializers.SlugRelatedField(slug_field="username", read_only=True)
+    author = serializers.SlugRelatedField(
+        slug_field="username", read_only=True
+    )
     hashtags = serializers.SlugRelatedField(
         many=True, slug_field="name", read_only=True
     )

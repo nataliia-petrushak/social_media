@@ -28,18 +28,36 @@ router.register("posts", PostViewSet)
 router.register("hashtags", HashtagViewSet)
 router.register("scheduled_posts", ScheduledPostViewSet)
 
-comment_list = CommentViewSet.as_view(actions={"get": "list", "post": "create"})
+comment_list = CommentViewSet.as_view(
+    actions={"get": "list", "post": "create"}
+)
 
 urlpatterns = [
     path("users/register/", CreateUserView.as_view(), name="user-create"),
-    path("users/login/", TokenObtainPairView.as_view(), name='token-obtain-pair'),
-    path('users/login/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
-    path('users/login/verify/', TokenVerifyView.as_view(), name='token-verify'),
+    path(
+        "users/login/",
+        TokenObtainPairView.as_view(),
+        name="token-obtain-pair"
+    ),
+    path(
+        'users/login/refresh/',
+        TokenRefreshView.as_view(),
+        name='token-refresh'
+    ),
+    path(
+        'users/login/verify/',
+        TokenVerifyView.as_view(),
+        name='token-verify'
+    ),
     path("users/logout/", APILogoutView.as_view(), name="logout"),
     path("users/me/", ManageUserView.as_view(), name="me"),
     path("users/me/followers/", followers, name="user-followers"),
     path("users/me/followings/", followings, name="user-followings"),
-    path("users/<int:pk>/follow/", follow_unfollow, name="follow-unfollow-user"),
+    path(
+        "users/<int:pk>/follow/",
+        follow_unfollow,
+        name="follow-unfollow-user"
+    ),
     path("posts/<int:pk>/like/", like_unlike, name="like-unlike-post"),
     path("posts/liked/", liked_posts, name="liked-posts"),
     path(

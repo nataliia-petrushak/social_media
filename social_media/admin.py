@@ -36,7 +36,7 @@ class PostAdmin(admin.ModelAdmin):
 
 
 @admin.register(ScheduledPost)
-class PostAdmin(admin.ModelAdmin):
+class ScheduledPostAdmin(admin.ModelAdmin):
     list_display = ("title", "author", "created_at")
     search_fields = ("title",)
     list_filter = ("author",)

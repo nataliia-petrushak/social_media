@@ -8,7 +8,10 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+from rest_framework_simplejwt.token_blacklist.models import (
+    OutstandingToken,
+    BlacklistedToken
+)
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
@@ -115,7 +118,10 @@ class APILogoutView(APIView):
         if self.request.data.get("all"):
             for token in OutstandingToken.objects.filter(user=request.user):
                 _, _ = BlacklistedToken.objects.get_or_create(token=token)
-            return Response({"status": "All refresh tokens blacklisted. Logout successful"})
+            return Response(
+                {"status": "All refresh tokens blacklisted. "
+                           "Logout successful"}
+            )
         refresh_token = self.request.data.get("refresh_token")
         token = RefreshToken(token=refresh_token)
         token.blacklist()
@@ -148,10 +154,13 @@ class PostViewSet(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
-    """Users can see all their posts and posts of the users they are following.
-    They can retrieve details about posts, including details about the author.
-    Users can also see if they liked the post, how many people liked it, and comments."""
-    queryset = Post.objects.select_related("author").prefetch_related("hashtags")
+    """Users can see all their posts and posts of the
+    users they are following.They can retrieve details about posts,
+    including details about the author. Users can also see if they liked
+    the post, how many people liked it, and comments."""
+    queryset = Post.objects.select_related(
+        "author"
+    ).prefetch_related("hashtags")
     serializer_class = PostSerializer
     permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
 
@@ -161,7 +170,9 @@ class PostViewSet(
     def get_queryset(self):
         user = self.request.user
         user_followings = user.followings.all()
-        queryset = self.queryset.filter(Q(author=user) | Q(author__in=user_followings))
+        queryset = self.queryset.filter(
+            Q(author=user) | Q(author__in=user_followings)
+        )
 
         hashtag = self.request.query_params.get("hashtag")
         title = self.request.query_params.get("title")
@@ -174,7 +185,9 @@ class PostViewSet(
 
         return queryset.annotate(
             is_liked=Exists(
-                Like.objects.filter(liker=self.request.user, post_id=OuterRef("pk"))
+                Like.objects.filter(
+                    liker=self.request.user, post_id=OuterRef("pk")
+                )
             )
         )
 
@@ -191,12 +204,14 @@ class PostViewSet(
             OpenApiParameter(
                 name="hashtag",
                 type=OpenApiTypes.STR,
-                description="Filter posts by hashtag (ex. ?hashtag=interesting)"
+                description="Filter posts by "
+                            "hashtag (ex. ?hashtag=interesting)"
             ),
             OpenApiParameter(
                 name="title",
                 type=OpenApiTypes.STR,
-                description="Filter posts by title (ex. ?title=Improve your life)"
+                description="Filter posts by "
+                            "title (ex. ?title=Improve your life)"
             )
         ]
     )
@@ -252,12 +267,14 @@ def follow_unfollow(request, pk):
         user_to_follow.followers.remove(current_user.id)
         current_user.followings.remove(user_to_follow)
         return Response(
-            {"message": f"You are not following {user_to_follow.username} anymore"}
+            {"message": f"You are not following "
+                        f"{user_to_follow.username} anymore"}
         )
 
     user_to_follow.followers.add(current_user.id)
     current_user.followings.add(user_to_follow.id)
-    return Response(data={"message": f"You are following {user_to_follow.username}"})
+    return Response(data={"message": f"You are following "
+                                     f"{user_to_follow.username}"})
 
 
 @api_view(["POST"])
@@ -276,7 +293,10 @@ def like_unlike(request, pk):
         )
 
     Like.objects.create(liker=user, post=post)
-    return Response({"message": "You liked this post"}, status=status.HTTP_201_CREATED)
+    return Response(
+        {"message": "You liked this post"},
+        status=status.HTTP_201_CREATED
+    )
 
 
 class CommentViewSet(viewsets.ModelViewSet):

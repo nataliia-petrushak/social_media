@@ -55,8 +55,12 @@ class User(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
     bio = models.TextField(blank=True)
     image = models.ImageField(null=True, upload_to=user_image_file_path)
-    followers = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="follow_users", blank=True)
-    followings = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="following_users", blank=True)
+    followers = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="follow_users", blank=True
+    )
+    followings = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, related_name="following_users", blank=True
+    )
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -68,12 +72,21 @@ class Hashtag(models.Model):
     name = models.CharField(max_length=63)
 
     def save(
-        self, force_insert=False, force_update=False, using=None, update_fields=None
+        self,
+        force_insert=False,
+        force_update=False,
+        using=None,
+        update_fields=None
     ):
         if not self.name.startswith("#"):
             self.name = f"#{self.name}"
 
-        super().save(force_insert=False, force_update=False, using=None, update_fields=None)
+        super().save(
+            force_insert=False,
+            force_update=False,
+            using=None,
+            update_fields=None
+        )
 
     def __str__(self) -> str:
         return self.name
@@ -90,9 +103,13 @@ class Post(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, related_name="posts", on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        related_name="posts",
+        on_delete=models.CASCADE
     )
-    hashtags = models.ManyToManyField(Hashtag, related_name="posts", blank=True)
+    hashtags = models.ManyToManyField(
+        Hashtag, related_name="posts", blank=True
+    )
     image = models.ImageField(null=True, upload_to=post_image_file_path)
     created_at = models.DateTimeField(blank=True, default=timezone.now)
 
@@ -104,9 +121,15 @@ class ScheduledPost(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
     author = models.ForeignKey(
-        settings.AUTH_USER_MODEL, related_name="scheduled_posts", on_delete=models.CASCADE
+        settings.AUTH_USER_MODEL,
+        related_name="scheduled_posts",
+        on_delete=models.CASCADE
     )
-    hashtags = models.ManyToManyField(Hashtag, related_name="scheduled_posts", blank=True)
+    hashtags = models.ManyToManyField(
+        Hashtag,
+        related_name="scheduled_posts",
+        blank=True
+    )
     image = models.ImageField(null=True, upload_to=post_image_file_path)
     created_at = models.DateTimeField(blank=True, default=timezone.now)
 
@@ -115,12 +138,20 @@ class ScheduledPost(models.Model):
 
 
 class Like(models.Model):
-    liker = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    post = models.ForeignKey(Post, related_name="likes", on_delete=models.CASCADE)
+    liker = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
+    post = models.ForeignKey(
+        Post, related_name="likes", on_delete=models.CASCADE
+    )
 
 
 class Comment(models.Model):
-    post = models.ForeignKey(Post, related_name="comments", on_delete=models.CASCADE)
+    post = models.ForeignKey(
+        Post, related_name="comments", on_delete=models.CASCADE
+    )
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
-    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE
+    )
